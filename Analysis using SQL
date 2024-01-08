@@ -1,0 +1,164 @@
+1.How many olympics games have been held?
+select count(distinct Games) [Total Games] from events
+
+2.List down all Olympics games held so far.
+select distinct Games from events
+
+3.Mention the total no of nations who participated in each olympics game?
+select count(distinct Team) as [Total Teams] from events
+
+4.Which year saw the highest and lowest no of countries participating in olympics?
+select Year,count(Games) [Total Games] from events
+group by Year
+order by count(Games) desc
+
+select Year,count(Games) [Total Games] from events
+group by Year
+order by count(Games)
+
+5.Which nation has participated in all of the olympic games?
+with cte as (
+select Team,COUNT(distinct Games) [Total Games] from events
+group by Team)
+
+select * from cte where  [Total Games] = (select count(distinct Games) from events)
+
+6.Identify the sport which was played in all summer olympics.
+with cte as(
+select Sport,
+       COUNT(distinct Games) [Total Games] 
+from events where Season='Summer'
+group by Sport
+)
+select * from cte 
+where [Total Games]=(select count(distinct Games) 
+					 from events where Season='Summer')
+
+7.Which Sports were just played only once in the olympics
+with cte as(
+select Sport,COUNT(Games)[Total Games] from events
+group by Sport
+)
+select Sport from cte where [Total Games]=1
+
+8.Fetch the total no of sports played in each olympic games.
+select distinct Games, 
+                COUNT(distinct Sport)[Total Sports] 
+from events
+group by Games
+
+9.Fetch details of the oldest athletes to win a gold medal.
+select * from events where Medal='Gold' and Age!='NA'
+order by Age desc
+
+10.Find the Ratio of male and female athletes participated in all olympic games.
+select cast((select cast(COUNT(Name)as decimal(18,2)) from events where Sex='M')/cast(COUNT(Games) as decimal(18,2)) *100
+            as decimal(18,2))
+from events
+
+select cast((select cast(COUNT(Name)as decimal(18,2)) from events where Sex='F')/cast(COUNT(Games) as decimal(18,2)) *100
+           as decimal(18,2))
+from events
+
+11.Fetch the top 5 athletes who have won the most gold medals.
+select top 5 name,count(Medal) [Total Medals] from events
+where Medal='Gold'
+group by name
+order by COUNT(Medal) desc 
+
+12.Fetch the top 5 athletes who have won the most medals (gold/silver/bronze).
+select top 5 name,count(Medal) [Total Medals] from events
+group by name
+order by COUNT(Medal) desc 
+
+13.Fetch the top 5 most successful countries in olympics. Success is defined by no of medals won.
+select top 5  Team, COUNT(Medal) [Total Medals] from events
+group by Team
+order by COUNT(Medal) desc
+
+14.List down total gold, silver and broze medals won by each country.
+select r.region,
+      SUM(case when Medal='Gold' then 1 else 0 end) as [Gold],
+      SUM(case when Medal='Silver' then 1 else 0 end) as [Silver],
+      SUM(case when Medal='Bronze' then 1 else 0 end) as [Bronze]
+from events e
+left join regions r on e.NOC=r.NOC
+group by r.region
+order by Gold desc,Silver desc,Bronze desc
+
+15.List down total gold, silver and broze medals won by each country corresponding to each olympic games.
+select  r.region,
+        Games,
+        SUM(case when Medal='Gold' then 1 else 0 end) as [Gold],
+        SUM(case when Medal='Silver' then 1 else 0 end) as [Silver],
+        SUM(case when Medal='Bronze' then 1 else 0 end) as [Bronze]
+from events e
+left join regions r on e.NOC=r.NOC
+group by Team,r.region
+order by Gold desc,Silver desc,Bronze desc
+
+16.Identify which country won the most gold, most silver and most bronze medals in each olympic games.
+select top 1  r.region,
+              SUM(case when Medal='Gold' then 1 else 0 end) as [Gold],
+              SUM(case when Medal='Silver' then 1 else 0 end) as [Silver],
+              SUM(case when Medal='Bronze' then 1 else 0 end) as [Bronze]
+from events e
+left join regions r on e.NOC=r.NOC
+group by r.region
+order by Gold desc,Silver desc,Bronze desc
+
+17.Identify which country won the most gold, most silver, most bronze medals and the most medals in each olympic games.
+select top 3  r.region,
+              Games,
+		          SUM(case when Medal='Gold' then 1 else 0 end) as [Gold],
+		          SUM(case when Medal='Silver' then 1 else 0 end) as [Silver],
+		          SUM(case when Medal='Bronze' then 1 else 0 end) as [Bronze],
+		          COUNT(Medal) [Total Medals]
+from events e
+left join regions r on e.NOC=r.NOC
+group by Team,r.region
+order by Gold desc,Silver desc,Bronze desc,COUNT(Medal) desc
+
+18.Which countries have never won gold medal but have won silver/bronze medals?
+with cte as (
+select    r.region,
+          SUM(case when Medal='Gold' then 1 else 0 end) as [Gold],
+          SUM(case when Medal='Silver' then 1 else 0 end) as [Silver],
+          SUM(case when Medal='Bronze' then 1 else 0 end) as [Bronze]
+from events e
+left join regions r on e.NOC=r.NOC
+group by r.region
+
+)
+select * from cte
+where [Gold]=0
+
+19.In which Sport/event, India has won highest medals.
+select top 1 Sport,
+             COUNT(Medal) [Total Medals]
+from events e
+left join regions r on e.NOC=r.NOC
+where r.region='india'
+group by Sport
+order by [Total Medals] desc
+
+20.Break down all olympic games where india won medal for Hockey and how many medals in each olympic games.
+with cte as (
+select Games,
+       COUNT(Medal)[Total hockey Medals] 
+from events e left join regions r on e.NOC=r.NOC
+where r.region='India' and e.Sport='hockey'
+group by Games
+)
+select c.Games,
+       [Total hockey Medals],
+	   count(e.Medal)[Total Medals] 
+from cte c
+inner join events e on e.Games= c.Games
+where e.Games in (select Games from cte)
+group by c.Games,[Total hockey Medals]
+order by c.Games
+
+
+
+
